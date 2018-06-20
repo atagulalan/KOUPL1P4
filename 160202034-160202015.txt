@@ -1,0 +1,318 @@
+import java.util.*;
+import java.io.*;
+
+class oyuncu {
+    private Scanner keyboard=new Scanner(System.in);
+    private Random random=new Random();
+    private char secim;
+    private boolean insanMi;
+    private String hamle;
+    private static char insanSecimi = 'X';
+
+    public oyuncu(){
+        this.insanMi=true;
+        secim='X';
+    }
+
+    public oyuncu(boolean insanMi){
+        this.insanMi=insanMi;
+        if(insanMi){
+            secim='X';
+        }else{
+            secim=insanSecimi=='X'?'O':'X';
+        }
+    }
+
+    public oyuncu(boolean insanMi, char kr){
+        this.insanMi=insanMi;
+        kr = kr=='x' ? 'X' : kr;
+        kr = kr=='o' ? 'O' : kr;
+        insanSecimi = kr;
+        this.secim=kr;
+    }
+
+    char karakteriAl(){
+        return secim;
+    }
+
+    boolean oyuncuTurunuAl(){
+        return insanMi;
+    }
+
+    private String oyuncununHamlesiniAl(){
+        return hamle;
+    }
+
+    public String oyuncuHamlesiniKontrol(){
+        if(insanMi){
+            System.out.print("Lutfen Hamle Yapınız (cikmak icin \"cikis\" yazin.): ");
+            hamle=keyboard.next();
+        }else{
+            hamle=bilgisayarHamlesiUret();
+        }
+        return hamle;
+    }
+
+    private String bilgisayarHamlesiUret(){
+        int i=random.nextInt(7);
+        int j=random.nextInt(7);
+        String eksenHarf = "abcdefg";
+        hamle= eksenHarf.substring(i, i+1)+""+(j+1);
+        return hamle;
+    }
+}
+
+
+class tahta {
+
+    private Scanner keyboard=new Scanner(System.in);
+    private char[][]oyunTahtasi;
+    private int boyut;
+    private String hamle;
+    private String ikinciBoyut = "abcdefg";
+    private String oyuncuAdi;
+
+    public tahta(String oyuncuAdi){
+        this.oyuncuAdi = oyuncuAdi;
+        do{
+            System.out.print("TicTacToe Boyut Giriniz: ");
+            try{
+                boyut = Integer.parseInt(keyboard.next());
+            }catch (Exception e){
+                boyut = 0;
+            }
+        }while(boyut!=3 && boyut!=5 && boyut != 7);
+        oyunTahtasi=new char[boyut][boyut];
+        for(int i=0;i<boyut;i++){
+            for(int j=0;j<boyut;j++){
+                oyunTahtasi[i][j]=' ';
+            }
+        }
+    }
+
+    public tahta(char[][] oyunTahtasi, String oyuncuAdi) {
+        boyut = oyunTahtasi.length;
+        this.oyunTahtasi = oyunTahtasi;
+        this.oyuncuAdi = oyuncuAdi;
+    }
+
+    char[][] oyunTahtasiniAl(){
+        return oyunTahtasi;
+    }
+
+    void oyunTahtasiniYazdir(){
+        System.out.print("  ");
+        for(int i=0;i<boyut;i++){
+            System.out.print(" "+ikinciBoyut.charAt(i));
+        }
+        System.out.print("\n");
+        for(int i=0;i<boyut;i++){
+            System.out.print(" "+(i+1));
+            for(int j=0;j<boyut;j++){
+                System.out.print(" "+oyunTahtasi[i][j]);
+            }
+            System.out.println("");
+        }
+    }
+
+    boolean hamleyiYaz(String koordinat,char oyuncu){
+        int sutun;
+        int satir;
+
+        //Aldıgimiz koordinati lowercase yapıyoruz ki ikinciBoyut degiskenindeki index'i bulabilsin.
+        koordinat = koordinat.toLowerCase();
+
+        if(koordinat.equals("cikis")){
+            System.out.print("Kaydetmek ister misiniz? (e=evet, h=hayır): ");
+            if(keyboard.next().toLowerCase().equals("e")){
+
+                BufferedWriter bw = null;
+                FileWriter fw = null;
+
+                try {
+                    String tahtaString = new String();
+                    for (int i=0;i<oyunTahtasi.length;i++){
+                        for (int j=0;j<oyunTahtasi.length;j++){
+                            tahtaString += oyunTahtasi[i][j];
+                        }
+                        if(i<oyunTahtasi.length-1){
+                            tahtaString += "\n";
+                        }
+                    }
+
+                    String content = oyunTahtasi.length+"\n"+oyuncu+"\n"+oyuncuAdi+"\n"+tahtaString;
+                    fw = new FileWriter("TicTacToe.save");
+                    bw = new BufferedWriter(fw);
+                    bw.write(content);
+                    bw.close();
+                    fw.close();
+                    System.out.println("Kaydedildi. Çıkılıyor...");
+                } catch (Exception e) {
+                    System.out.println("Yazılamadı.");
+                }
+
+
+
+            }
+            System.exit(0);
+        }
+
+        //Yanlis girilirse program patlamasin diye try-catch bloguna aliyoruz
+        try {
+            //3A VE A3 aynı olması için karakter kontrolu yapiyoruz.
+            if(Character.isDigit(koordinat.substring(1,2).charAt(0))){
+                sutun = ikinciBoyut.indexOf(koordinat.substring(0,1));
+                satir = Integer.valueOf(koordinat.substring(1,2))-1;
+            }else{
+                sutun = ikinciBoyut.indexOf(koordinat.substring(1,2));
+                satir = Integer.valueOf(koordinat.substring(0,1))-1;
+            }
+
+            //Eger boyuttan buyuk bir sayi girildiyse hamle yapilamaz.
+            if(satir>boyut-1 || sutun>boyut-1 || sutun<0 || satir<0 ){
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+
+        //Eger alinan satir ve sutun bos degil ise yerine koyup kontrolleri yapiyoruz
+        if(oyunTahtasi[satir][sutun]==' '){
+            oyunTahtasi[satir][sutun] = oyuncu;
+            oyunTahtasiniYazdir();
+            if(kazanan(oyuncu)){
+                System.out.println(oyuncu+" kazandı");
+            }else{
+                //Eger kazanan yok ise beraberlige bakiliyor. Sonucta, son hamle ile kazanan cikabilir.
+                if(beraberlikKontrol()){
+                    System.out.println("Beraberlik oldu");
+                }
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+
+    boolean kazanan(char oyuncu){
+        //Bastan sona tum bloklari dolasip 8 tarafina bakiyor.
+        for(int i = 0; i<boyut;i++){
+            for(int j = 0; j<boyut;j++){
+                if(oyunTahtasi[i][j]==oyuncu){
+                    if(((i+2<boyut) && oyunTahtasi[i+1][j]==oyuncu && oyunTahtasi[i+2][j]==oyuncu) ||  //saga
+                    ((i-2<boyut && i-2>=0) && oyunTahtasi[i-1][j]==oyuncu && oyunTahtasi[i-2][j]==oyuncu) || //sola
+                    ((j+2<boyut) && oyunTahtasi[i][j+1]==oyuncu && oyunTahtasi[i][j+2]==oyuncu) || //asagi
+                    ((j-2<boyut && j-2>=0) && oyunTahtasi[i][j-1]==oyuncu && oyunTahtasi[i][j-2]==oyuncu) || //yukari
+                    ((i+2<boyut && j+2<boyut) && oyunTahtasi[i+1][j+1]==oyuncu && oyunTahtasi[i+2][j+2]==oyuncu) || //sag asagi
+                    ((i+2<boyut && j-2<boyut && j-2>=0) && oyunTahtasi[i+1][j-1]==oyuncu && oyunTahtasi[i+2][j-2]==oyuncu) || //sag yukari
+                    ((i-2<boyut && j+2<boyut && i-2>=0) && oyunTahtasi[i-1][j+1]==oyuncu && oyunTahtasi[i-2][j+2]==oyuncu) || //sol asagi
+                    ((i-2<boyut && j-2<boyut && j-2>=0 && i-2>=0) && oyunTahtasi[i-1][j-1]==oyuncu && oyunTahtasi[i-2][j-2]==oyuncu) //sol yukari
+                    ){ return true; }
+                }
+            }
+        }
+        return false;
+    }
+
+
+    boolean beraberlikKontrol(){
+        //Tum bloklar dolu ise ve kazanan yoksa (kazanan kontrolu yukarida yapildi) beraberlik vardir.
+        boolean beraberOldu = true;
+        for(int i = 0; i<boyut;i++){
+            for(int j = 0; j<boyut;j++) {
+                if(oyunTahtasi[i][j]==' '){ beraberOldu = false; }
+            }
+        }
+        return beraberOldu;
+    }
+}
+
+public class main {
+
+    public static void main(String[] args) {
+        boolean tekrar = false;
+        do{
+            String kullaniciAdi = "";
+            char karakter = 'X';
+
+            boolean kaydiYukle = false;
+            FileReader in = null;
+            Scanner keyboard = new Scanner(System.in);
+            char saveTahta[][] = {};
+            tahta yeniOyun;
+            oyuncu oyuncu1;
+            oyuncu oyuncu2;
+
+            File f = new File("TicTacToe.save");
+            if (f.exists() && !f.isDirectory()) {
+                System.out.println("Önceki oyundan kayıt bulundu! Yüklemek ister misiniz? (e=evet, h=hayır): ");
+                kaydiYukle = keyboard.nextLine().equals("e");
+                if (kaydiYukle) {
+                    try (BufferedReader br = new BufferedReader(new FileReader("TicTacToe.save"))) {
+                        String line;
+                        int count = 1;
+                        int boyut = 0;
+                        while ((line = br.readLine()) != null) {
+                            if (count == 1) {
+                                boyut = Integer.parseInt(line);
+                                saveTahta = new char[boyut][boyut];
+                            } else if (count == 2) {
+                                karakter = line.charAt(0);
+                            } else if (count == 3) {
+                                kullaniciAdi = line;
+                            } else {
+                                saveTahta[count - 4] = new char[boyut];
+                                for (int i = 0; i < boyut; i++) {
+                                    saveTahta[count - 4][i] = line.charAt(i);
+                                }
+                            }
+                            count++;
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e);
+                    }
+                }
+            }
+
+            if (kaydiYukle) {
+                yeniOyun = new tahta(saveTahta, kullaniciAdi);
+                oyuncu1 = new oyuncu(true, karakter);
+                oyuncu2 = new oyuncu(false);
+            } else {
+                System.out.print("İsminizi Giriniz: ");
+                kullaniciAdi = keyboard.nextLine();
+
+                yeniOyun = new tahta(kullaniciAdi);
+
+                //Gercekten X,x,O,o alana kadar tekrar iste.
+                do {
+                    System.out.print("Kullanılacak karakteri giriniz (X, O (Geçmek için Enter tuşuna tıklayın)): ");
+                    String temp = keyboard.nextLine();
+                    karakter = temp.length() == 1 ? temp.charAt(0) : temp.isEmpty() ? 'X' : 'Z';
+                } while (karakter != 'X' && karakter != 'x' && karakter != 'O' && karakter != 'o');
+
+                oyuncu1 = new oyuncu(true, karakter);
+                oyuncu2 = new oyuncu(false);
+            }
+
+
+            yeniOyun.oyunTahtasiniYazdir();
+
+            boolean siraKimde = false;
+            while (!yeniOyun.beraberlikKontrol() && !(yeniOyun.kazanan('X') || yeniOyun.kazanan('O'))) {
+                boolean yazdirildi;
+                do {
+                    if (siraKimde) {
+                        yazdirildi = yeniOyun.hamleyiYaz(oyuncu2.oyuncuHamlesiniKontrol(), oyuncu2.karakteriAl());
+                    } else {
+                        yazdirildi = yeniOyun.hamleyiYaz(oyuncu1.oyuncuHamlesiniKontrol(), oyuncu1.karakteriAl());
+                    }
+                } while (!yazdirildi);
+                siraKimde = !siraKimde;
+            }
+            System.out.println("Tekrar oynamak ister misiniz? (e=evet, h=hayır): ");
+            tekrar = keyboard.nextLine().toLowerCase().equals("e");
+        }while(tekrar);
+    }
+}
